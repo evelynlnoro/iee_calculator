@@ -28,20 +28,20 @@ void binario(int n, int i) {
     printf(" ");
 }
 
-printBinario(int sinal, int expoente, int mantissa) {
-    printf("Num binario: %d ", sinal);
+printBinario(int sinal, int expoente, unsigned int mantissa, char msg[]) {
+    printf("\nValor %s em binario: %d ", msg, sinal);
     binario(expoente, 8);
     binario(mantissa, 23);
 }
 
-float converterBinarioFloat(int sinal, int expoente, int mantissa) {
+float converterBinarioFloat(int sinal, int expoente, unsigned int mantissa) {
     return (pow(-1, sinal) * (mantissa / pow(2,23)) * pow(2, (expoente - 127)));
 }
 
 void soma(unionfloat var, unionfloat var2) {
     int exp = var.field.expoente - 127;
     int exp2 = var2.field.expoente - 127;
-
+   
     int desloca;
     unsigned int soma_mantissa;
 
@@ -52,53 +52,56 @@ void soma(unionfloat var, unionfloat var2) {
             desloca = exp - exp2;
             mantissa_aux2 = mantissa_aux2 >> desloca;
             soma_mantissa = mantissa_aux2 + mantissa_aux;
-            printf("valor mantissa 1: ");
-            binario(soma_mantissa,23);
-            printBinario(var.field.sinal, var.field.expoente, soma_mantissa);
+            printBinario(var.field.sinal, var.field.expoente, soma_mantissa, "soma");
             printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, soma_mantissa));
         } else {
             desloca = exp2 - exp;
             mantissa_aux = mantissa_aux >> desloca;
             soma_mantissa = mantissa_aux + mantissa_aux2;
-            printf("valor mantissa 2: ");
-            binario(soma_mantissa,23);
-            printBinario(var2.field.sinal, var2.field.expoente, soma_mantissa);
+            printBinario(var2.field.sinal, var2.field.expoente, soma_mantissa, "soma");
             printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, soma_mantissa));
         }
     } else {
         soma_mantissa = mantissa_aux + mantissa_aux2;
-        printf("valor mantissa 3: ");
-        binario(soma_mantissa, 23);
-        printBinario(var2.field.sinal, var2.field.expoente, soma_mantissa);
+        printBinario(var2.field.sinal, var2.field.expoente, soma_mantissa, "soma");
         printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, soma_mantissa));
     }
 }
 
+void subtracao() {}
+
+void multiplicacao() {}
+
 int main() {
     unionfloat var;
     unionfloat var2;
-    char op = 'o';
-    while (op != '!' ) {
-        printf("Digite 's' para soma.\nDigite 'b' para subtracao.\nOpcao: ");
-        scanf("%s", &op);
-        printf("\n\nEntre com um ponto flutuante 1: ");
-        scanf("%f",&var.f);
-        
-        printf("Entre com um ponto flutuante 2: ");
-        scanf("%f",&var2.f);
-        
-        printf("Binario num 1: %d ",var.field.sinal);
-        binario(var.field.expoente, 8);
-        binario(var.field.mantissa, 23);
-        printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, var.field.mantissa + 0x800000));
+    int op = -1;
+    do {
+        printf("Digite:\n'1' para soma.\n'2' para subtracao.\n'3' para multiplicacao.\n'0' para sair.\nOpcao: ");
+        scanf("%d", &op);
+       
+        if (op) {
+            printf("\nEntre com um ponto flutuante 1: ");
+            scanf("%f",&var.f);
+            
+            printf("Entre com um ponto flutuante 2: ");
+            scanf("%f",&var2.f);
+            
+            printBinario(var.field.sinal, var.field.expoente, var.field.mantissa, "1");
+            printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, var.field.mantissa + 0x800000));
 
-        printf("Binario num 2: %d ",var2.field.sinal);
-        binario(var2.field.expoente, 8);
-        binario(var2.field.mantissa, 23);
-        printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, var2.field.mantissa + 0x800000));
+            printBinario(var2.field.sinal, var2.field.expoente, var2.field.mantissa, "2");
+            printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, var2.field.mantissa + 0x800000));
 
-        soma(var, var2);
-    }
+            if (op == 1) {
+                soma(var, var2);
+            } else if (op == 2) {
+                subtracao();
+            } else if (op == 4) {
+                multiplicacao();
+            }
+        }
+    } while (op != 0);
 
     return 0;
 }
