@@ -28,7 +28,35 @@ void binario(int n, int i) {
     printf(" ");
 }
 
-printBinario(int sinal, int expoente, unsigned int mantissa, char msg[]) {
+int binaryProduct(int binNum1, int binNum2) {
+    int i = 0;
+    int rem = 0;
+    int product = 0;
+    int sum[20] = { 0 };
+
+    while (binNum1 != 0 || binNum2 != 0) {
+
+        sum[i] = (binNum1 % 10 + binNum2 % 10 + rem) % 2;
+        rem = (binNum1 % 10 + binNum2 % 10 + rem) / 2;
+
+        binNum1 = binNum1 / 10;
+        binNum2 = binNum2 / 10;
+
+        i = i + 1;
+    }
+
+    if (rem != 0)
+        sum[i] = rem;
+
+    while (i >= 0) {
+        product = product * 10 + sum[i];
+        i = i - 1;
+    }
+
+    return product;
+}
+
+void printBinario(int sinal, int expoente, unsigned int mantissa, char msg[]) {
     printf("\nValor %s em binario: %d ", msg, sinal);
     binario(expoente, 8);
     binario(mantissa, 23);
@@ -68,9 +96,64 @@ void soma(unionfloat var, unionfloat var2) {
     }
 }
 
-void subtracao() {}
+void subtracao(unionfloat var, unionfloat var2) {
+    int exp = var.field.expoente - 127;
+    int exp2 = var2.field.expoente - 127;
+   
+    int desloca;
+    unsigned int sub_mantissa;
 
-void multiplicacao() {}
+    unsigned int mantissa_aux = var.field.mantissa + 0x800000;
+    unsigned int mantissa_aux2 = var2.field.mantissa + 0x800000;
+    if (exp != exp2) {
+        if (exp > exp2) {
+            desloca = exp - exp2;
+            mantissa_aux2 = mantissa_aux2 >> desloca;
+            sub_mantissa = mantissa_aux2 - mantissa_aux;
+            printBinario(var.field.sinal, var.field.expoente, sub_mantissa, "subtração");
+            printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, sub_mantissa));
+        } else {
+            desloca = exp2 - exp;
+            mantissa_aux = mantissa_aux >> desloca;
+            sub_mantissa = mantissa_aux - mantissa_aux2;
+            printBinario(var2.field.sinal, var2.field.expoente, sub_mantissa, "subtração");
+            printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, sub_mantissa));
+        }
+    } else {
+        sub_mantissa = mantissa_aux - mantissa_aux2;
+        printBinario(var2.field.sinal, var2.field.expoente, sub_mantissa, "subtração");
+        printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, sub_mantissa));
+    }
+}
+
+void multiplicacao(unionfloat var, unionfloat var2) {
+    unsigned int soma_expoentes, mult_mantissas;
+    int digit = 0;
+    int factor = 1;
+
+    if (var.field.mantissa == 0 || var2.field.mantissa == 0) {
+        printf("Numero reconstruido: %f\n", 0.0);
+    } else {
+        soma_expoentes = var.field.expoente + var2.field.expoente;
+        while (var2.field.mantissa != 0) {
+            digit = var2.field.mantissa % 10;
+
+            if (digit == 1) {
+                var.field.mantissa = var.field.mantissa * factor;
+                mult_mantissas = binaryProduct(var.field.mantissa, mult_mantissas);
+            }
+            else {
+                var.field.mantissa = var.field.mantissa * factor;
+            }
+
+            var2.field.mantissa = var2.field.mantissa / 10;
+            factor = 10;
+        }
+        printf("Multiplicação mantissas: %d", mult_mantissas);
+        printBinario(var2.field.sinal, soma_expoentes, mult_mantissas, "multiplicação");
+        printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, soma_expoentes, mult_mantissas));
+    }
+}
 
 int main() {
     unionfloat var;
@@ -96,9 +179,9 @@ int main() {
             if (op == 1) {
                 soma(var, var2);
             } else if (op == 2) {
-                subtracao();
-            } else if (op == 4) {
-                multiplicacao();
+                subtracao(var, var2);
+            } else if (op == 3) {
+                multiplicacao(var, var2);
             }
         }
     } while (op != 0);
