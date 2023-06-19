@@ -127,11 +127,8 @@ void subtracao(unionfloat var, unionfloat var2) {
     }
 }
 
-float multiplicacao(unionfloat num1, unionfloat num2) {
-    unionfloat f1, f2, result;
-
-    f1.f = num1.f;
-    f2.f = num2.f;
+void multiplicacao(unionfloat f1, unionfloat f2) {
+    unionfloat result;
 
     // Obtém os sinais dos números
     result.field.sinal = f1.field.sinal ^ f2.field.sinal;
@@ -156,7 +153,7 @@ float multiplicacao(unionfloat num1, unionfloat num2) {
     result.field.expoente = exponent;
     result.field.mantissa = (mantissa_result >> 23) & 0x7FFFFF;
 
-    return result.f;
+    printf("Resultado: %f\n", result.f);
 }
 
 int main() {
@@ -185,8 +182,7 @@ int main() {
             } else if (op == 2) {
                 subtracao(var, var2);
             } else if (op == 3) {
-                float result = multiplicacao(var, var2);
-                printf("Resultado: %f\n", result);
+                multiplicacao(var, var2);
             }
         }
     } while (op != 0);
