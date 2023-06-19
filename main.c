@@ -1,6 +1,7 @@
 // Trabalho GB - Evelyn Noro e Mateus Tizotti
 
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 
 typedef union {
@@ -126,33 +127,36 @@ void subtracao(unionfloat var, unionfloat var2) {
     }
 }
 
-void multiplicacao(unionfloat var, unionfloat var2) {
-    unsigned int soma_expoentes, mult_mantissas;
-    int digit = 0;
-    int factor = 1;
+float multiplicacao(unionfloat num1, unionfloat num2) {
+    unionfloat f1, f2, result;
 
-    if (var.field.mantissa == 0 || var2.field.mantissa == 0) {
-        printf("Numero reconstruido: %f\n", 0.0);
-    } else {
-        soma_expoentes = var.field.expoente + var2.field.expoente;
-        while (var2.field.mantissa != 0) {
-            digit = var2.field.mantissa % 10;
+    f1.f = num1.f;
+    f2.f = num2.f;
 
-            if (digit == 1) {
-                var.field.mantissa = var.field.mantissa * factor;
-                mult_mantissas = binaryProduct(var.field.mantissa, mult_mantissas);
-            }
-            else {
-                var.field.mantissa = var.field.mantissa * factor;
-            }
+    // Obtém os sinais dos números
+    result.field.sinal = f1.field.sinal ^ f2.field.sinal;
 
-            var2.field.mantissa = var2.field.mantissa / 10;
-            factor = 10;
-        }
-        printf("Multiplicação mantissas: %d", mult_mantissas);
-        printBinario(var2.field.sinal, soma_expoentes, mult_mantissas, "multiplicação");
-        printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, soma_expoentes, mult_mantissas));
+    // Soma os expoentes e subtrai o bias
+    int exponent = f1.field.expoente + f2.field.expoente - 127;
+
+    // Obtém as mantissas dos números e adiciona o bit implícito era uint32_t
+    u_int32_t mantissa1 = f1.field.mantissa | 0x800000;
+    u_int32_t mantissa2 = f2.field.mantissa | 0x800000;
+
+    // Multiplica as mantissas
+    uint64_t mantissa_result = (uint64_t)mantissa1 * (uint64_t)mantissa2;
+
+    // Normaliza a mantissa resultante
+    if (mantissa_result & 0x8000000000000000) {
+        mantissa_result >>= 1;
+        exponent++;
     }
+
+    // Ajusta o expoente do resultado e remove o bit implícito
+    result.field.expoente = exponent;
+    result.field.mantissa = (mantissa_result >> 23) & 0x7FFFFF;
+
+    return result.f;
 }
 
 int main() {
@@ -181,7 +185,8 @@ int main() {
             } else if (op == 2) {
                 subtracao(var, var2);
             } else if (op == 3) {
-                multiplicacao(var, var2);
+                float result = multiplicacao(var, var2);
+                printf("Resultado: %f\n", result);
             }
         }
     } while (op != 0);
