@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
+#include <locale.h>
+#include <stdlib.h>
 
 typedef union {
 	float f;
@@ -13,132 +15,18 @@ typedef union {
 	} field;
 } unionfloat;
 
-void printNumeroReconstruido(float num) {
-    printf("\nNumero reconstruido: %f \n\n", num);
-}
-
-void binario(int n, int i) {
-    int k;
-    for (i--; i >= 0; i--) {
-      k = n >> i;
-      if (k & 1)
-        printf("1");
-      else
-        printf("0");
-    }
-    printf(" ");
-}
-
-int binaryProduct(int binNum1, int binNum2) {
-    int i = 0;
-    int rem = 0;
-    int product = 0;
-    int sum[20] = { 0 };
-
-    while (binNum1 != 0 || binNum2 != 0) {
-
-        sum[i] = (binNum1 % 10 + binNum2 % 10 + rem) % 2;
-        rem = (binNum1 % 10 + binNum2 % 10 + rem) / 2;
-
-        binNum1 = binNum1 / 10;
-        binNum2 = binNum2 / 10;
-
-        i = i + 1;
-    }
-
-    if (rem != 0)
-        sum[i] = rem;
-
-    while (i >= 0) {
-        product = product * 10 + sum[i];
-        i = i - 1;
-    }
-
-    return product;
-}
-
-void printBinario(int sinal, int expoente, unsigned int mantissa, char msg[]) {
-    printf("\nValor %s em binario: %d ", msg, sinal);
-    binario(expoente, 8);
-    binario(mantissa, 23);
-}
-
-float converterBinarioFloat(int sinal, int expoente, unsigned int mantissa) {
-    return (pow(-1, sinal) * (mantissa / pow(2,23)) * pow(2, (expoente - 127)));
-}
-
-void soma(unionfloat var, unionfloat var2) {
-    int exp = var.field.expoente - 127;
-    int exp2 = var2.field.expoente - 127;
-   
-    int desloca;
-    unsigned int soma_mantissa;
-
-    unsigned int mantissa_aux = var.field.mantissa + 0x800000;
-    unsigned int mantissa_aux2 = var2.field.mantissa + 0x800000;
-    if (exp != exp2) {
-        if (exp > exp2) {
-            desloca = exp - exp2;
-            mantissa_aux2 = mantissa_aux2 >> desloca;
-            soma_mantissa = mantissa_aux2 + mantissa_aux;
-            printBinario(var.field.sinal, var.field.expoente, soma_mantissa, "soma");
-            printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, soma_mantissa));
-        } else {
-            desloca = exp2 - exp;
-            mantissa_aux = mantissa_aux >> desloca;
-            soma_mantissa = mantissa_aux + mantissa_aux2;
-            printBinario(var2.field.sinal, var2.field.expoente, soma_mantissa, "soma");
-            printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, soma_mantissa));
-        }
-    } else {
-        soma_mantissa = mantissa_aux + mantissa_aux2;
-        printBinario(var2.field.sinal, var2.field.expoente, soma_mantissa, "soma");
-        printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, soma_mantissa));
-    }
-}
-
-void subtracao(unionfloat var, unionfloat var2) {
-    int exp = var.field.expoente - 127;
-    int exp2 = var2.field.expoente - 127;
-   
-    int desloca;
-    unsigned int sub_mantissa;
-
-    unsigned int mantissa_aux = var.field.mantissa + 0x800000;
-    unsigned int mantissa_aux2 = var2.field.mantissa + 0x800000;
-    if (exp != exp2) {
-        if (exp > exp2) {
-            desloca = exp - exp2;
-            mantissa_aux2 = mantissa_aux2 >> desloca;
-            sub_mantissa = mantissa_aux2 - mantissa_aux;
-            printBinario(var.field.sinal, var.field.expoente, sub_mantissa, "subtração");
-            printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, sub_mantissa));
-        } else {
-            desloca = exp2 - exp;
-            mantissa_aux = mantissa_aux >> desloca;
-            sub_mantissa = mantissa_aux - mantissa_aux2;
-            printBinario(var2.field.sinal, var2.field.expoente, sub_mantissa, "subtração");
-            printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, sub_mantissa));
-        }
-    } else {
-        sub_mantissa = mantissa_aux - mantissa_aux2;
-        printBinario(var2.field.sinal, var2.field.expoente, sub_mantissa, "subtração");
-        printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, sub_mantissa));
-    }
-}
-
-void multiplicacao(unionfloat f1, unionfloat f2) {
+unionfloat multiplicacao(unionfloat n1, unionfloat n2) {
     unionfloat result;
 
     // Obtém os sinais dos números
-    result.field.sinal = f1.field.sinal ^ f2.field.sinal;
+    result.field.sinal = n1.field.sinal ^ n2.field.sinal;
 
     // Soma os expoentes e subtrai o bias
-    int exponent = f1.field.expoente + f2.field.expoente - 127;
+    int exponent = n1.field.expoente + n2.field.expoente - 127;
 
-    // Obtém as mantissas dos números e adiciona o bit implícito era uint32_t
-    u_int32_t mantissa1 = f1.field.mantissa | 0x800000;
-    u_int32_t mantissa2 = f2.field.mantissa | 0x800000;
+    // Obtém as mantissas dos números e adiciona o bit implícito
+    u_int32_t mantissa1 = n1.field.mantissa | 0x800000;
+    u_int32_t mantissa2 = n2.field.mantissa | 0x800000;
 
     // Multiplica as mantissas
     uint64_t mantissa_result = (uint64_t)mantissa1 * (uint64_t)mantissa2;
@@ -153,7 +41,134 @@ void multiplicacao(unionfloat f1, unionfloat f2) {
     result.field.expoente = exponent;
     result.field.mantissa = (mantissa_result >> 23) & 0x7FFFFF;
 
-    printf("Resultado: %f\n", result.f);
+    return result;
+}
+
+
+/// <summary>
+/// Funcao para imprimir na tela os bits de um numero
+/// </summary>
+/// <param name="n">valor decimal qualquer</param>
+/// <param name="i">numero de bits que sera implementado o numero</param>
+/// <returns></returns>
+void binario(int n, int i)
+{
+	int k;
+	for (i--; i >= 0; i--)
+	{
+		k = n >> i; // valor de n deslocado em i
+		if (k & 1) // 1 e uma mascara, numero 1 em binario 00000001
+			printf("1");
+		else
+			printf("0");	
+	}
+}
+
+void binario_s(int n, int i, char *s) {
+	printf("\n%s\t", s);
+	binario(n, i);
+}
+
+// Converte o numero no padrao ieee754 para o numero com ponto flutuante normal
+float reconstruirNumero(unionfloat numero) {
+	return pow(-1, (numero.field.sinal)) * (1.0 + numero.field.mantissa / pow(2, 23)) * pow(2, (numero.field.expoente - 127));
+}
+
+// Normalizar o numero a partir do sinal, expoente e mantissa, colocando o primeiro bit como 1
+unionfloat normalizaNumero(int sinal, int exp, int mantissa) {
+	unionfloat n;
+	n.field.sinal = sinal;
+	int desloc_exp = 0;
+	
+	// Se nao for zero (nao faz sentido procurar)
+	if (mantissa != 0) {
+		// Procura pelo primeiro 1 da mantissa, da esquerda (MSB) para direita (LSB)
+		int mascara = 0x80000000;
+		for (int i = 31; i >= 0; i--) {
+			if ((mantissa & mascara) != 0) {
+				desloc_exp = i;
+				break;
+			}
+			mascara = mascara >> 1;
+		}
+		// Calcula deslocamento em relacao a posicao padrao (23)
+		desloc_exp = desloc_exp - 23;
+		if (desloc_exp < 0)
+			mantissa = mantissa << abs(desloc_exp);
+		else 
+			mantissa = mantissa >> desloc_exp;
+		n.field.expoente = exp + desloc_exp + 127;
+	} else {
+		n.field.expoente = 0;
+	}
+
+	n.field.mantissa = mantissa;
+
+	return n;
+}
+
+// Realiza o complemento
+void ajustaNegativo(int * mantissa, int * exp) {
+	*mantissa = ~(*mantissa) + 1;
+}
+
+unionfloat add(unionfloat a, unionfloat b) {
+	int exp;
+	int exp2;
+	int desloca;
+	int mantissa_aux;
+	int mantissa_aux2;
+	int soma_mantissa;
+
+	exp = a.field.expoente - 127; // recupera o expoente limpo (valora armazenado na variavel expoente - bias(127))
+	exp2 = b.field.expoente - 127;
+
+	mantissa_aux = a.field.mantissa + 0x800000; // passando para variavel auxiliar e somando 1. (1.mantissa implicito que deve ser adicionado
+	mantissa_aux2 = b.field.mantissa + 0x800000; // passando para variavel auxiliar e somando 1.
+
+	// Se for um numero negativo
+	if (a.field.sinal == 1) {
+		ajustaNegativo(&mantissa_aux, &exp);
+	}
+	// Se for um numero negativo
+	if (b.field.sinal == 1) {
+		ajustaNegativo(&mantissa_aux2, &exp2);
+	}
+
+	if (exp != exp2) {
+		// se os expoentes forem diferentes, tem que pegar o menor e igualar ao maior
+		if (exp > exp2) {  // iguala o expoente dos numeros para poder somar (so podemos somar as mantissas se tiverem expoentes iguais) nesse caso exp do numero 1 e maior que o do numero 2
+			desloca = exp - exp2; // quantas vezes tem que deslocar essa mantissa
+			exp2 = exp;
+			mantissa_aux2 = mantissa_aux2 >> desloca; // entao deslocamos a virgula do numero menor (2)
+		} else { // iguala o expoente dos numeros para poder somar (so podemos somar as mantissas se tiverem expoentes iguais) nesse caso exp do numero 2 e maior que o do numero 1
+			desloca = exp2 - exp; // quantas vezes tem que deslocar essa mantissa
+			exp = exp2;
+			mantissa_aux = mantissa_aux >> desloca;  // entao deslocamos a virgula do numero menor (1)
+		}
+	} 
+
+	soma_mantissa = mantissa_aux + mantissa_aux2;
+
+	int sinal = 0;
+	// So faz o complemento se o numero for negativo
+	if (soma_mantissa < 0) {
+		soma_mantissa = ~soma_mantissa;
+		sinal = 1;
+	}
+	
+	return normalizaNumero(sinal, exp, soma_mantissa);
+}
+
+void exibeNumero(unionfloat n, char * descricao) {
+	printf("\n");
+	printf("%d ", n.field.sinal);
+	binario(n.field.expoente, 8);
+	printf(" ");
+	binario(n.field.mantissa, 23);
+	printf("\n");
+	printf("%s reconstituido:  \t%f\n", descricao, reconstruirNumero(n));
+	printf("\n");
 }
 
 int main() {
@@ -165,25 +180,21 @@ int main() {
         scanf("%d", &op);
        
         if (op) {
+            unionfloat numeroResultadoOperacao;
             printf("\nEntre com um ponto flutuante 1: ");
             scanf("%f",&var.f);
             
             printf("Entre com um ponto flutuante 2: ");
             scanf("%f",&var2.f);
-            
-            printBinario(var.field.sinal, var.field.expoente, var.field.mantissa, "1");
-            printNumeroReconstruido(converterBinarioFloat(var.field.sinal, var.field.expoente, var.field.mantissa + 0x800000));
-
-            printBinario(var2.field.sinal, var2.field.expoente, var2.field.mantissa, "2");
-            printNumeroReconstruido(converterBinarioFloat(var2.field.sinal, var2.field.expoente, var2.field.mantissa + 0x800000));
-
-            if (op == 1) {
-                soma(var, var2);
-            } else if (op == 2) {
-                subtracao(var, var2);
+       
+            if (op == 1 || op == 2) {
+                if (op == 2) 
+                    var2.f = - var2.f;
+                numeroResultadoOperacao = add(var, var2);
             } else if (op == 3) {
-                multiplicacao(var, var2);
+                numeroResultadoOperacao = multiplicacao(var, var2);
             }
+            exibeNumero(numeroResultadoOperacao, "Resultado (simulado)");
         }
     } while (op != 0);
 
